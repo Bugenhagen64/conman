@@ -1,8 +1,6 @@
 Pull via ansible-pull
 ----------------------
 
-sudo apt update
+# apt install git ansible
 
-sudo apt install git ansible
-
-sudo ansible-pull -U git@github.com:Bugenhagen64/conman.git site.yml
+# ansible-pull -U https://github.com/Bugenhagen64/conman.git site.yml
