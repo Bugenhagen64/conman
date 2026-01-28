@@ -1,0 +1,70 @@
+---
+- name: Minimal LXDE + Xorg + xdm på Raspberry Pi
+  hosts: localhost
+  become: yes
+  gather_facts: yes
+
+  vars:
+    tmpfs_entries:
+      - { path: "/var/log", mode: "0755" }
+      - { path: "/tmp",     mode: "1777" }
+
+  tasks:
+
+    - name: Uppdatera apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Installera git och ansible
+      apt:
+        name:
+          - git
+          - ansible
+        state: present
+
+    - name: Installera Xorg + LXDE + xdm
+      apt:
+        name:
+          - xserver-xorg
+          - xinit
+          - lxde-core
+          - xdm
+        state: present
+
+    - name: Stäng av XDMCP (säkerhet)
+      lineinfile:
+        path: /etc/X11/xdm/xdm-config
+        regexp: '^DisplayManager.requestPort:'
+        line: 'DisplayManager.requestPort: 0'
+        create: no
+      notify: restart xdm
+
+    - name: Skapa tmpfs‑mounts i fstab
+      blockinfile:
+        path: /etc/fstab
+        marker: "# {mark} ANSIBLE TMPFS"
+        block: |
+          tmpfs /var/log tmpfs defaults,noatime,mode=0755 0 0
+          tmpfs /tmp     tmpfs defaults,noatime,mode=1777 0 0
+
+    - name: Skapa kataloger för tmpfs‑mounts (om de saknas)
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+      loop: "{{ tmpfs_entries }}"
+
+    - name: Förbered read‑only root (lägg till noatime)
+      replace:
+        path: /etc/fstab
+        regexp: '(\s+/.*\s+ext4\s+)(.*)'
+        replace: '\1\2,noatime'
+      when: ansible_facts['distribution'] == "Debian"
+
+  handlers:
+    - name: restart xdm
+      service:
+        name: xdm
+        state: restarted
+
