@@ -16,13 +16,6 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Installera git och ansible
-      apt:
-        name:
-          - git
-          - ansible
-        state: present
-
     - name: Installera Xorg + LXDE + xdm
       apt:
         name:
